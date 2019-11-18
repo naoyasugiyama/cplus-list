@@ -3,6 +3,9 @@
 #include <cstdint>
 #include <assert.h>
 
+//todo Memory leakの対処
+
+
 struct userData
 {
 	char* name;
@@ -96,6 +99,8 @@ public:
 		return this->user_score;
 	}
 
+	
+
 	// getter/setter
 	LinkNode* GetNext()
 	{
@@ -144,9 +149,8 @@ public:
 	{
 		this->DeleteList();
 		delete(this->Dummy);
-		list_count--;
 
-		//test
+		//check
 		std::cout << "delete count:[" << list_count << "]" << std::endl;
 
 	}
@@ -226,7 +230,7 @@ public:
 		return this->InsertBeforer(this->Dummy, score);
 	}
 
-	LinkNode* InserLast(const char* name, uint64_t playscore, uint64_t playtime)
+	LinkNode* InsertLast(const char* name, uint64_t playscore, uint64_t playtime)
 	{
 		userData* score = new userData(name, playscore, playtime);
 		return this->InsertBeforer(this->Dummy, score);
@@ -245,13 +249,11 @@ public:
 		return n->GetNext();
 	}
 
-	// 先頭の要素を削除
 	void EraseFirst()
 	{
 		this->Erase(this->First());
 	}
 
-	// 末尾の要素を削除
 	void EraseLast()
 	{
 		this->Erase(this->Last());
@@ -311,12 +313,13 @@ private:
 };
 
 
-// todo 
-class Ranking
+// list check test
+class ListCheck
 {
 public:
-	Ranking():
-		LinkTable(nullptr)
+	ListCheck() :
+		LinkTable(nullptr),
+		print_counter(9)
 	{
 		if (this->LinkTable == nullptr)
 		{
@@ -324,7 +327,7 @@ public:
 		}
 	}
 
-	~Ranking()
+	~ListCheck()
 	{
 		if (this->LinkTable != nullptr)
 		{
@@ -333,7 +336,214 @@ public:
 		this->LinkTable = nullptr;
 	}
 
+
+private:
+
+	// userdata * 
+	userData*  GetUserData(const char* username) 
+	{
+		userData* data = nullptr;
+		LinkNode* top = this->LinkTable->First();
+
+		while (top != LinkTable->End())
+		{
+			userData* var = top->GetScore();
+			if (var != nullptr)
+			{
+				if( strcmp( username, var->name ) == 0 )
+				{
+					data = var;
+					break;
+				}
+			}
+			top = top->GetNext();
+		}
+		return data;
+	}
+
+	//!> get user node linklist
+	LinkNode* GetUserNode(const char* username, LinkList* srcList )
+	{
+		LinkNode* result = nullptr;
+
+		if (srcList == nullptr)
+		{
+			assert("assert srcNode Null");
+		}
+		LinkNode* top = srcList->First();
+
+		while (top != srcList->End())
+		{
+			userData* var = top->GetScore();
+			if (strcmp( var->name, username) == 0 )
+			{
+				result = top;
+				break;
+			}
+			top = top->GetNext();
+		}
+
+		return result;
+	}
+
+
+public:
+
+	void Insert(const char* name, uint64_t score)
+	{
+		this->LinkTable->InsertLast(name, score);
+	}
+
+	void   Insert(const char* name, uint64_t score, uint64_t daytime)
+	{
+		this->LinkTable->InsertLast(name, score, daytime);
+	}
+
+
+	//!> dummyが表示されるバグ
+	void PinrtListTop10(LinkList* srclist)
+	{
+//		std::cout << "call print list top 10 " << std::endl;
+		
+		if (srclist == nullptr)
+		{
+			assert("src list null");
+		}
+
+		srclist->sort_score();
+		uint16_t count = 0;
+
+		LinkNode* itr = srclist->Last();
+		for (; itr != LinkTable->End(); itr = itr->GetPrev())
+		{
+			userData* var = itr->GetScore();
+			if (var != nullptr )
+			{
+				if (var->daytime != 0) 
+				{
+					std::cout << "name:[" << var->name << "] score:[" << var->score << "]" << "daytime:[" << var->daytime << "]" << std::endl;
+				}
+				else
+				{
+					std::cout << "name:[" << var->name << "] score:[" << var->score << "]" << std::endl;
+				}
+			}
+
+			count++;
+			if (count > print_counter) break;
+		}
+
+		std::cout << "----------------------------------------" << std::endl;
+
+	}
+
+	void PrintTop10()
+	{
+		std::cout << "call PrintTop10 :" << std::endl;
+//		this->LinkTable->sort_score();
+
+		this->PinrtListTop10(this->LinkTable);
+	}
+
+
+	//!>
+	void PrintUser(const char* username ) 
+	{
+		std::cout << "call PrintUser :" << username << std::endl;
+		
+		LinkNode* top = LinkTable->First();
+
+		while(top != LinkTable->End() )
+		{
+			userData* var = top->GetScore();
+			
+			if (var != nullptr)
+			{
+				if (strcmp(var->name , username) == 0)
+				{
+					std::cout << "score:[" << var->score << "]" << std::endl;
+				}
+			}
+			top = top->GetNext();
+		}
+
+		std::cout << "----------------------------------------" << std::endl;
+	}
+
+
+	//!> 同じ名前のユーザーのスコアが高い方を優先して表示する
+	void PrintTop10_Not_duplicate()
+	{
+		std::cout << "call PrintTop10 distinct" << std::endl;
+
+		LinkList* notDuplicate = new LinkList();
+		LinkNode* top = LinkTable->First();
+
+		while (top != LinkTable->End())
+		{
+			userData* var = top->GetScore();
+			if (var != nullptr)
+			{
+				//!> table内に同名ユーザーがいる場合
+				LinkNode* checkNode = this->GetUserNode(var->name, notDuplicate);
+				//!> usernameが登録されていないか元データから抽出する
+				if (checkNode == nullptr)
+				{
+					notDuplicate->InsertLast(var->name, var->score);
+				}
+				else
+				{
+					//!> usernameのスコアが高い方を上書き登録する
+					userData* duplicate = checkNode->GetScore();
+					if (var->score > duplicate->score) 
+					{
+						duplicate->score = var->score;
+					}
+				}
+			}
+			top = top->GetNext();
+		}
+
+		//!> print top10 node
+		this->PinrtListTop10(notDuplicate);
+		delete notDuplicate;
+	}
+
+	//6桁固定されてるのを変更したい
+	void PrintTop10_FilterTimeYM( const uint64_t daytime )
+	{
+		// WHERE=daytime
+		std::cout << "call ProntTop 10 Filter" << std::endl;
+		LinkList* filterlist = new LinkList();
+		LinkNode* top = LinkTable->First();
+
+		uint64_t ym = daytime / 1000000;
+
+		while (top != LinkTable->End())
+		{
+			userData* var = top->GetScore();
+			
+			if(var != nullptr )
+			{
+				uint64_t ym2 = var->daytime / 1000000;// year , month 
+				if ( ym == ym2)
+				{
+					filterlist->InsertLast( var->name, var->score,var->daytime);
+				}
+			}
+			top = top->GetNext();
+		}
+
+
+		this->PinrtListTop10(filterlist);
+
+		delete filterlist;
+
+	}
+
+
+
 private:
 	LinkList* LinkTable;
-
+	const uint16_t print_counter;// print count 
 };
