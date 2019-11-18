@@ -1,0 +1,20 @@
+# git ignore
+
+Debug/
+x64/
+.vs/
+
+#
+*.exe
+
+#
+*.pch
+*.obj
+*.idb
+*.pdb
+*.db
+*.ipch
+
+
+#
+*.filters
