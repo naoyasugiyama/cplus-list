@@ -414,14 +414,14 @@ public:
 		uint16_t count = 0;
 
 		LinkNode* itr = srclist->Last();
-		for (; itr != LinkTable->End(); itr = itr->GetPrev())
+		for (; itr != srclist->End(); itr = itr->GetPrev())
 		{
 			userData* var = itr->GetScore();
 			if (var != nullptr )
 			{
 				if (var->daytime != 0) 
 				{
-					std::cout << "name:[" << var->name << "] score:[" << var->score << "]" << "daytime:[" << var->daytime << "]" << std::endl;
+					std::cout << "name:[" << var->name << "] score:[" << var->score << "] daytime:[" << var->daytime << "]" << std::endl;
 				}
 				else
 				{
